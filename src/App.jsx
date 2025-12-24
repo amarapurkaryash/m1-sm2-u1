@@ -4,7 +4,7 @@ import axios from "axios";
 import "./css/App.css";
 
 const server = axios.create({
-  baseURL: "http://thepwnexperts.com:3002/",
+  baseURL: "http://localhost:3001/",
 });
 
 const App = () => {
@@ -43,25 +43,26 @@ const App = () => {
     }
 
     try {
-      const res = await server.post("/otp/verify", { from: email, otp: otp });
-      if (res.status != 200) {
-        console.log("Some problem occured while verifying OTP: \n", res);
-        setMessage(
-          "Some problem occured while verifying OTP\n" + res?.data?.message
-        );
-      }
-      if (res.status == 200) {
-        setMessage("OTP Verified Successfully");
-        setOtpGenerated(false);
+      // INSECURE: Getting stored OTP from server and comparing in client
+      // DO NOT DO THIS IN PRODUCTION - this is for learning about security vulnerabilities
+      const res = await server.post("/otp/verify", { from: email });
+      if (res.status === 200 && res.data.storedOtp) {
+        // Compare OTP on client side (insecure - visible in Network tab)
+        console.log('Stored OTP from server:', res.data.storedOtp); // Deliberately logging for educational purposes
+        if (otp === res.data.storedOtp) {
+          setMessage("OTP Verified Successfully");
+          setOtpGenerated(false);
+        } else {
+          setMessage("Invalid OTP");
+        }
+      } else {
+        console.log("Some problem occurred while verifying OTP: \n", res);
+        setMessage("Some problem occurred while verifying OTP");
       }
       setOTP("");
     } catch (error) {
       console.log(error);
-      if (error?.response?.status == 406) setMessage("Invalid OTP");
-      else
-        setMessage(
-          "Some problem occured while verifying OTP\n" + error?.message
-        );
+      setMessage("Some problem occurred while verifying OTP\n" + error?.message);
     }
     setOTP("");
     setLoading(false);
